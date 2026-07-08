@@ -1,4 +1,5 @@
 local L = Config.Locales[Config.Locale] or Config.Locales.en
+local myPlayerId = PlayerId()
 
 local pendingConfirms = {}
 local confirmSeq = 0
@@ -156,7 +157,7 @@ local function disableProgressControls(disable)
     end
 
     if disable.disableCombat then
-        DisablePlayerFiring(PlayerId(), true)
+        DisablePlayerFiring(myPlayerId, true)
         DisableControlAction(0, 24, true)
         DisableControlAction(0, 25, true)
         DisableControlAction(0, 37, true)
@@ -573,7 +574,7 @@ local function SkillCheck(difficulty, keys)
             
             while isSkillcheckActive and checkThreadActive do
                 -- Disable standard combat actions so player doesn't shoot or punch while lockpicking
-                DisablePlayerFiring(PlayerId(), true)
+                DisablePlayerFiring(myPlayerId, true)
                 DisableControlAction(0, 24, true) -- Attack
                 DisableControlAction(0, 25, true) -- Aim
                 DisableControlAction(0, 37, true) -- Weapon Wheel
@@ -584,7 +585,7 @@ local function SkillCheck(difficulty, keys)
 
                 -- Check if any of the mapped controls for the key is pressed
                 for _, control in ipairs(controls) do
-                    if IsDisabledControlJustPressed(0, control) or IsControlJustPressed(0, control) then
+                    if IsDisabledControlJustPressed(0, control) then
                         SendNUIMessage({ action = 'skillcheck:keyPress' })
                         break
                     end

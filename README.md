@@ -6,8 +6,6 @@
 
 ---
 
-![preview.png](preview.png)
-
 ## English
 
 ### What it does
