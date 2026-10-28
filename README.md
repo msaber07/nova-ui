@@ -209,7 +209,7 @@ end
 
 #### QBCore text — `qb-core/client/drawtext.lua`
 
-Show function:
+Paste this at the top of both `drawText` and `changeText`:
 
 ```lua
 if GetResourceState('nova-ui') == 'started' then
@@ -221,7 +221,7 @@ if GetResourceState('nova-ui') == 'started' then
 end
 ```
 
-Hide function:
+Paste this at the top of `hideText`. `keyPressed` calls `hideText`, so it needs no block of its own.
 
 ```lua
 if GetResourceState('nova-ui') == 'started' then
@@ -357,7 +357,7 @@ Mevcut bir çağrıyı Nova UI'ye almak için bloğu **kendi dosyandaki** fonksi
 
 - QBCore bildirim: `qb-core/client/functions.lua` → `QBCore.Functions.Notify`
 - QBCore progress: aynı dosya → `QBCore.Functions.Progressbar`
-- QBCore yazı: `qb-core/client/drawtext.lua` → gösteren ve gizleyen fonksiyon
+- QBCore yazı: `qb-core/client/drawtext.lua` → `drawText` ve `changeText` başına göster bloğu, `hideText` başına gizle bloğu. `keyPressed` ayrıca dokunulmaz.
 - ESX bildirim: `esx_notify/Notify.lua` → `Notify`
 - ESX progress: `esx_progressbar/Progress.lua` → barı çizen `SendNUIMessage` satırı. Fonksiyonun başında `return` yok. İptalde `CancelProgress()` çağrılır, altındaki temizlik durur.
 - ESX yazı: `esx_textui/TextUI.lua` → `TextUI` ve `HideUI`
