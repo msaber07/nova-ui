@@ -2,7 +2,7 @@
 
 > Standalone, framework-free UI layer for FiveM: notifications, confirm dialogs,
 > progress bars, document cards, context menus, input dialogs, and lockpick skillchecks.
-> Supports built-in automatic bridging for popular resources. TR/EN built in.
+> No framework files are included. Optional redirects are short paste-in lines. TR/EN built in.
 
 ---
 
@@ -18,7 +18,7 @@ A shared, reusable UI library exposed through client-side exports and events. It
 - **Input Dialog** — thread-blocking popup forms supporting text inputs, passwords, numbers, select dropdowns, and checkboxes.
 - **Skill Check** — sleek circular SVG spinner mini-game. Supports custom key binds (E, R, Q, F, SPACE), movement during play, and **multiple consecutive stages** (e.g. Easy -> Medium -> Hard) with an interactive progress counter.
 - **Synthesized Audio** — dynamic, self-contained chimes generated via NUI **Web Audio API** (no sound files needed).
-- **Automatic Bridge** — auto-intercepts notifications and TextUIs sent from `ox_lib`, `QBCore`, `ESX Legacy`, and `okokNotify`, instantly displaying them in the elegant Nova UI theme with zero code changes.
+- **Optional redirects** — nova-ui does not ship or replace QBCore, ESX, ox_lib, or okokNotify files. Paste the short blocks in [Optional integration](#optional-integration) into your own functions when you want those calls to draw Nova UI.
 
 ### Dependencies
 **None.** Pure standalone resource.
@@ -33,6 +33,7 @@ A shared, reusable UI library exposed through client-side exports and events. It
 | --- | --- |
 | `Config.Locale` | Built-in string language: `'en'` or `'tr'`. |
 | `Config.PlaySounds` | Toggle synthesized NUI sound effects: `true` or `false`. |
+| `Config.Debug` | Dev commands `/testmenu`, `/testinput`, `/testskill`. Leave `false` in a public build. |
 | `Config.Brand.badge` | Default badge (1–2 letters) on document cards. |
 | `Config.Brand.footer` | Default footer text on document cards. |
 | `Config.Locales` | Custom translations for headers, locales, and default text. |
@@ -174,6 +175,137 @@ CreateThread(function()
 end)
 ```
 
+### Optional integration
+
+nova-ui does not listen for `QBCore:Notify`, `esx:showNotification`, `ox_lib:notify`, or `okokNotify:Alert`. Those resources already draw their own UI, so a second listener shows two cards.
+
+Other Nova scripts call the exports when `GetResourceState('nova-ui') == 'started'`, and fall back to ox_lib or the framework notify when it is not. Do not list `nova-ui` under `dependencies`.
+
+To redirect an existing call, paste **only** the block below at the top of the function that already exists in **your** file. Leave the rest of that function untouched. This resource does not contain those files.
+
+#### QBCore notify — `qb-core/client/functions.lua`, function `QBCore.Functions.Notify`
+
+```lua
+if GetResourceState('nova-ui') == 'started' then
+    exports['nova-ui']:Notify(text, texttype, length)
+    return
+end
+```
+
+#### QBCore progress — same file, function `QBCore.Functions.Progressbar`
+
+```lua
+if GetResourceState('nova-ui') == 'started' then
+    exports['nova-ui']:Progress({
+        label = label,
+        duration = duration,
+        canCancel = canCancel,
+        disableControls = disableControls,
+        animation = animation,
+    }, onFinish, onCancel)
+    return
+end
+```
+
+#### QBCore text — `qb-core/client/drawtext.lua`
+
+Show function:
+
+```lua
+if GetResourceState('nova-ui') == 'started' then
+    exports['nova-ui']:ShowTextUI({
+        text = text,
+        position = position == 'left' and 'left-center' or 'right-center',
+    })
+    return
+end
+```
+
+Hide function:
+
+```lua
+if GetResourceState('nova-ui') == 'started' then
+    exports['nova-ui']:HideTextUI()
+    return
+end
+```
+
+#### ESX notify — `esx_notify/Notify.lua`, function `Notify`
+
+`notificatonType` is the parameter name already used by that function.
+
+```lua
+if GetResourceState('nova-ui') == 'started' then
+    exports['nova-ui']:Notify({
+        message = message,
+        type = notificatonType,
+        duration = length,
+        title = title,
+    })
+    return
+end
+```
+
+#### ESX progress — `esx_progressbar/Progress.lua`
+
+Inside `Progressbar`:
+
+```lua
+if GetResourceState('nova-ui') == 'started' then
+    exports['nova-ui']:Progress({
+        label = message,
+        duration = length or 3000,
+        canCancel = true,
+    }, Options and Options.onFinish, Options and Options.onCancel)
+    return true
+end
+```
+
+Inside `CancelProgressbar`:
+
+```lua
+if GetResourceState('nova-ui') == 'started' then
+    exports['nova-ui']:CancelProgress()
+    return
+end
+```
+
+#### ESX text — `esx_textui/TextUI.lua`
+
+Inside `TextUI`:
+
+```lua
+if GetResourceState('nova-ui') == 'started' then
+    exports['nova-ui']:ShowTextUI({ text = message, position = 'right-center' })
+    return
+end
+```
+
+Inside `HideUI`:
+
+```lua
+if GetResourceState('nova-ui') == 'started' then
+    exports['nova-ui']:HideTextUI()
+    return
+end
+```
+
+#### ox_lib — optional
+
+Skip this if ox_lib should keep its own notifications. Both resources run together with no edit. To draw Nova UI instead, paste this at the top of `lib.notify` in `ox_lib/resource/interface/client/notify.lua`:
+
+```lua
+if GetResourceState('nova-ui') == 'started' then
+    exports['nova-ui']:Notify({
+        title = data.title,
+        message = data.description,
+        type = data.type == 'inform' and 'info' or data.type,
+        duration = data.duration,
+    })
+    return
+end
+```
+
 ### Emergency Bypass
 If a developer error or script crash locks NUI mouse focus, players can open their **F8 Console** and type:
 `releasefocus`
@@ -193,7 +325,7 @@ This command immediately unlocks NUI focus, clears mouse captures, and closes ac
 - **Veri Girişi (Input Dialog)** — yazı, şifre, sayı, açılır liste (select) ve onay kutusu (checkbox) içeren thread-blocking form pencereleri.
 - **Skill Check (Yetenek Oyunu)** — dairesel dönen ibre oyunu. Karakter hareket halindeyken oynanabilir ve **ardışık çoklu aşama (örneğin Kolay -> Orta -> Zor)** desteği sunar.
 - **Sentezlenmiş Sesler** — NUI **Web Audio API** ile doğrudan tarayıcıda sentezlenen ses efektleri (harici ses dosyası gerektirmez).
-- **Otomatik Entegrasyon Köprüsü** — Sunucudaki diğer scriptlerin `ox_lib`, `QBCore`, `ESX Legacy` ve `okokNotify` üzerinden gönderdiği bildirimleri ve TextUI pencerelerini otomatik olarak yakalar ve Nova UI stilinde görüntüler.
+- **İsteğe bağlı yönlendirme** — nova-ui, QBCore, ESX, ox_lib veya okokNotify dosyalarını içermez ve değiştirmez. O çağrıların Nova UI çizmesini istiyorsan aşağıdaki entegrasyon bölümündeki kısa bloğu kendi fonksiyonunun en üstüne yapıştırırsın.
 
 ### Kurulum
 1. `nova-ui` klasörünü `resources` içine atın (örn. `resources/[standalone]/`).
@@ -205,6 +337,7 @@ This command immediately unlocks NUI focus, clears mouse captures, and closes ac
 | --- | --- |
 | `Config.Locale` | Hazır metinlerin varsayılan dili: `'en'` veya `'tr'`. |
 | `Config.PlaySounds` | Yapay NUI ses efektleri: `true` (aktif) veya `false` (kapalı). |
+| `Config.Debug` | Geliştirme komutları: `/testmenu`, `/testinput`, `/testskill`. Yayında `false` kalır. |
 | `Config.Brand.badge` | Belge kartındaki varsayılan rozet (1–2 harf). |
 | `Config.Brand.footer` | Belge kartındaki varsayılan alt metin. |
 | `Config.Locales` | Dile göre başlıklar, yerelleştirme metinleri ve varsayılan etiketler. |
@@ -213,6 +346,22 @@ This command immediately unlocks NUI focus, clears mouse captures, and closes ac
 
 Kullanım kalıpları (Context Menu kaydetme, Input Dialog coroutine yapısı, Skill Check çoklu aşama döngüleri ve Confirm tek butonlu bildirim modu) yukarıdaki İngilizce (**Exports**) bölümünde detaylı kod bloklarıyla listelenmiştir.
 
+### İsteğe bağlı entegrasyon
+
+nova-ui `QBCore:Notify`, `esx:showNotification`, `ox_lib:notify` ve `okokNotify:Alert` event'lerini dinlemez. O resource'lar kendi arayüzlerini de çizdiği için ikinci bir dinleyici iki kart çıkarır.
+
+Diğer nova scriptleri `GetResourceState('nova-ui') == 'started'` ise export çağırır. Değilse ox_lib veya framework bildirimine düşer. `fxmanifest` içindeki `dependencies` listesine `nova-ui` yazılmaz.
+
+Mevcut bir çağrıyı Nova UI'ye almak için bloğu **kendi dosyandaki** fonksiyonun en üstüne yapıştır. Fonksiyonun geri kalanı aynı kalır. Kod blokları yukarıdaki İngilizce **Optional integration** bölümündedir. Yapıştırılacak yerler:
+
+- QBCore bildirim: `qb-core/client/functions.lua` → `QBCore.Functions.Notify`
+- QBCore progress: aynı dosya → `QBCore.Functions.Progressbar`
+- QBCore yazı: `qb-core/client/drawtext.lua` → gösteren ve gizleyen fonksiyon
+- ESX bildirim: `esx_notify/Notify.lua` → `Notify`
+- ESX progress: `esx_progressbar/Progress.lua` → `Progressbar` ve `CancelProgressbar`
+- ESX yazı: `esx_textui/TextUI.lua` → `TextUI` ve `HideUI`
+- ox_lib: isteğe bağlı. Kendi bildirimi kalsın istiyorsan dokunma. Nova UI çizsin istiyorsan `lib.notify` başına İngilizce bölümdeki bloğu yapıştır.
+
 ### Acil Durum Kurtarma
 Herhangi bir yazılımsal çökme veya geliştirici hatası nedeniyle farenizin ekranda kilitli kalması durumunda, klavyenizden **F8** tuşuna basıp konsola:
 `releasefocus`
@@ -220,4 +369,4 @@ yazarak tüm arayüz odaklarını ve kilitleri anında kaldırabilirsiniz.
 
 ---
 
-**Author:** Nova · **Version:** 1.1.0 · **Type:** Standalone UI library
+**Author:** Nova · **Version:** 1.2.0 · **Type:** Standalone UI library

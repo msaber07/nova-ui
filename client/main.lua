@@ -624,50 +624,10 @@ RegisterNUICallback('skillcheckResult', function(data, cb)
 end)
 
 
--- ── Auto Bridge Listeners (Redirects third-party notify/TextUI) ──────────
-
--- Bridge ox_lib notify events
-RegisterNetEvent('ox_lib:notify', function(data)
-    if not data then return end
-    Notify({
-        type = data.type == 'inform' and 'info' or data.type,
-        title = data.title or 'Alert',
-        message = data.description or data.text or '',
-        duration = data.duration or 4000,
-    })
-end)
-
--- Bridge okokNotify alert events
-RegisterNetEvent('okokNotify:Alert', function(title, text, duration, type, playSound)
-    Notify({
-        type = type,
-        title = title,
-        message = text,
-        duration = duration or 4000,
-    })
-end)
-
--- Bridge QBCore default notify events
-RegisterNetEvent('QBCore:Notify', function(text, type, length)
-    Notify({
-        type = type,
-        message = text,
-        duration = length or 4500,
-    })
-end)
-
--- Bridge ESX default notify events
-RegisterNetEvent('esx:showNotification', function(message, type, length)
-    local text = message
-    if type(message) == 'table' then
-        text = message.message or message.text or ''
-    end
-    Notify({
-        type = type or 'primary',
-        message = tostring(text),
-        duration = length or 4000,
-    })
-end)
+-- No event hijack of QBCore, ESX, ox_lib, or okokNotify.
+-- Those resources already draw their own UI. A second listener stacks a second
+-- card. Redirects are a few lines the server owner pastes into their own file.
+-- See README, Optional integration. This resource ships none of their code.
 
 
 -- ── Exports ──────────────────────────────────────────────────────────────
@@ -701,7 +661,8 @@ RegisterCommand('releasefocus', function()
 end, false)
 
 
--- ── Test Commands (For manual in-game verification) ──────────────────────
+-- ── Test Commands (only when Config.Debug is true) ───────────────────────
+if Config.Debug then
 RegisterCommand('testmenu', function()
     -- Register Main Menu
     RegisterMenu({
@@ -780,3 +741,4 @@ RegisterCommand('testskill', function()
         end
     end)
 end, false)
+end

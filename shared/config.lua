@@ -6,6 +6,9 @@ Config.Locale = 'en'
 -- Sound configuration: Play synthesized UI sound effects
 Config.PlaySounds = true
 
+-- Dev commands (/testmenu, /testinput, /testskill). Keep false in a public release.
+Config.Debug = false
+
 -- Document card default brand. It can be overridden during the call.
 Config.Brand = {
     badge = 'N', -- document card badge (short, 1-2 letters)
