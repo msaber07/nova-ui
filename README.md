@@ -11,7 +11,7 @@
 ### What it does
 A shared, reusable UI library exposed through client-side exports and events. It has **no dependencies** (not even a framework), so it runs anywhere. Features:
 - **Notifications** — toast notifications with tone (info / success / error / warning), title, message, and a timed bar.
-- **Confirm** — a yes/no modal with callbacks and a timeout. Supports turning into a single-button **Alert Dialog** if `rejectLabel` is omitted.
+- **Confirm** — a yes/no modal with callbacks and a timeout. Set `rejectLabel = false` for a single-button alert.
 - **Progress** — a progress bar with optional animation and control locking, plus finish/cancel callbacks.
 - **Document card** — a styled ID/registration-style card (badge, title, fields, footer).
 - **Context Menu** — vertical interactive menus supporting icons, descriptions, nested submenus, and full keyboard navigation (Arrow keys + Enter + ESC).
@@ -59,7 +59,7 @@ exports['nova-ui']:Confirm({
   if accepted then print('bought') else print('cancelled') end
 end)
 
--- Alert Mode: pass rejectLabel = false or nil to display only a single "Ok" button
+-- Alert Mode: rejectLabel must be false. nil keeps the default Decline button.
 exports['nova-ui']:Confirm({
   title = 'Access Denied',
   message = 'You do not have the required keycard.',
@@ -248,25 +248,26 @@ end
 
 #### ESX progress — `esx_progressbar/Progress.lua`
 
-Inside `Progressbar`:
+Do not return at the top of `Progressbar`. The animation, `FreezePlayer`, countdown and `onFinish` already live below the UI call. Replace only the `SendNUIMessage` that draws the bar. `canCancel` and `clearTasks` stay off so Nova does not cancel, clear the ped, or call the finish callback itself.
 
 ```lua
 if GetResourceState('nova-ui') == 'started' then
     exports['nova-ui']:Progress({
         label = message,
         duration = length or 3000,
-        canCancel = true,
-    }, Options and Options.onFinish, Options and Options.onCancel)
-    return true
+        canCancel = false,
+        clearTasks = false,
+    })
+else
+    -- keep the SendNUIMessage that was already here
 end
 ```
 
-Inside `CancelProgressbar`:
+Inside `CancelProgressbar`, close the Nova bar and then leave the rest of the function in place. Do not return before the task clear, unfreeze and `onCancel`.
 
 ```lua
 if GetResourceState('nova-ui') == 'started' then
     exports['nova-ui']:CancelProgress()
-    return
 end
 ```
 
@@ -318,7 +319,7 @@ This command immediately unlocks NUI focus, clears mouse captures, and closes ac
 ### Ne işe yarar?
 İstemci tarafı (client) export ve event'ler aracılığıyla sunulan, paylaşılan ve yeniden kullanılabilir bir UI kütüphanesi. **Hiçbir bağımlılığı yoktur** (framework bağımsızdır), her pakette çalışır. Özellikler:
 - **Bildirimler** — tonlu (info / success / error / warning), başlık + mesaj + süreli çubuk içeren bildirim kartları.
-- **Confirm** — geri çağırmalı (callback) ve zaman aşımlı onay kutusu. `rejectLabel = false` veya `nil` girildiğinde tek butonlu **Alert Dialog (Uyarı/Bilgilendirme)** moduna geçer.
+- **Confirm** — geri çağırmalı (callback) ve zaman aşımlı onay kutusu. Tek butonlu alert için `rejectLabel = false` gerekir. `nil` varsayılan Reddet yazısını bırakır.
 - **Progress** — opsiyonel animasyonlu, iptal edilebilir ve kontrol kilitli ilerleme çubuğu.
 - **Belge Kartı** — kimlik/ruhsat tarzı özelleştirilebilir şık kart tasarımı (rozet, başlık, veri tablosu, alt metin).
 - **Açılır Menü (Context Menu)** — yön tuşları, Enter ve ESC ile kontrol edilen dikey etkileşim menüleri. Alt menüler arası geçişlerde ekran titremesi (flicker) yapmaz.
@@ -358,7 +359,7 @@ Mevcut bir çağrıyı Nova UI'ye almak için bloğu **kendi dosyandaki** fonksi
 - QBCore progress: aynı dosya → `QBCore.Functions.Progressbar`
 - QBCore yazı: `qb-core/client/drawtext.lua` → gösteren ve gizleyen fonksiyon
 - ESX bildirim: `esx_notify/Notify.lua` → `Notify`
-- ESX progress: `esx_progressbar/Progress.lua` → `Progressbar` ve `CancelProgressbar`
+- ESX progress: `esx_progressbar/Progress.lua` → barı çizen `SendNUIMessage` satırı. Fonksiyonun başında `return` yok. İptalde `CancelProgress()` çağrılır, altındaki temizlik durur.
 - ESX yazı: `esx_textui/TextUI.lua` → `TextUI` ve `HideUI`
 - ox_lib: isteğe bağlı. Kendi bildirimi kalsın istiyorsan dokunma. Nova UI çizsin istiyorsan `lib.notify` başına İngilizce bölümdeki bloğu yapıştır.
 
@@ -369,4 +370,4 @@ yazarak tüm arayüz odaklarını ve kilitleri anında kaldırabilirsiniz.
 
 ---
 
-**Author:** Nova · **Version:** 1.2.0 · **Type:** Standalone UI library
+**Author:** Nova · **Version:** 1.2.1 · **Type:** Standalone UI library

@@ -110,7 +110,8 @@ local function Confirm(data, onAccept, onReject)
             title = data.title or L.confirmTitle,
             message = data.message or '',
             acceptLabel = data.acceptLabel or L.accept,
-            rejectLabel = data.rejectLabel or L.reject,
+            -- false hides the reject button. nil still falls back to the locale default.
+            rejectLabel = data.rejectLabel == nil and L.reject or data.rejectLabel,
             timeout = data.timeout or 30000,
         },
     })
@@ -212,12 +213,18 @@ local function cleanupProgress(cancelled)
         ClearPedTasks(PlayerPedId())
     end
 
-    if cancelled then
-        if progress.onCancel then progress.onCancel() end
+    -- Two callbacks keep the old contract: finish() and cancel() are called with no args.
+    -- A single callback receives true on finish and false on cancel.
+    if progress.onCancel then
+        if cancelled then
+            progress.onCancel()
+        elseif progress.onFinish then
+            progress.onFinish()
+        end
         return
     end
 
-    if progress.onFinish then progress.onFinish() end
+    if progress.onFinish then progress.onFinish(not cancelled) end
 end
 
 local function Progress(data, onFinish, onCancel)
@@ -293,10 +300,14 @@ RegisterNUICallback('confirmResult', function(data, cb)
     SetNuiFocus(false, false)
 
     if pending then
-        if accepted and pending.accept then
-            pending.accept()
-        elseif not accepted and pending.reject then
-            pending.reject()
+        if pending.reject then
+            if accepted and pending.accept then
+                pending.accept()
+            elseif not accepted then
+                pending.reject()
+            end
+        elseif pending.accept then
+            pending.accept(accepted and true or false)
         end
     end
 

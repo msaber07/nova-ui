@@ -5,7 +5,7 @@ lua54 'yes'
 name 'nova-ui'
 author 'Nova'
 description 'Standalone Nova UI: notifications, confirm, progress, document cards, menu, input and skillcheck. No framework files included.'
-version '1.2.0'
+version '1.2.1'
 
 shared_scripts {
     'shared/config.lua',

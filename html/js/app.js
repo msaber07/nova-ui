@@ -244,6 +244,17 @@ const textuiEl    = document.getElementById('textui');
 const textuiIcon  = document.getElementById('textui-icon');
 const textuiLabel = document.getElementById('textui-label');
 
+// Allow only the tags the stylesheet uses. Everything else stays text.
+function formatTextUi(raw) {
+  const escaped = String(raw)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return escaped.replace(/&lt;(\/?)(strong|br)\s*\/?&gt;/gi, function (_, slash, tag) {
+    return '<' + slash + tag.toLowerCase() + '>';
+  });
+}
+
 function showTextUI(data) {
   if (!textuiEl || !data) return;
   const text = String(data.text || '');
@@ -256,7 +267,7 @@ function showTextUI(data) {
   } else {
     textuiIcon.classList.add('hidden');
   }
-  textuiLabel.innerHTML = text; // <strong> destegi
+  textuiLabel.innerHTML = formatTextUi(text);
   textuiEl.classList.remove('hidden');
 }
 
